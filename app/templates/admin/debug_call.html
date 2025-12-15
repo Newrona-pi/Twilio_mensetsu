@@ -1,0 +1,60 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="header mb-4">
+    <h1>デバッグ架電ツール</h1>
+    <p class="text-muted">任意の番号と質問内容でテスト架電を実行します。</p>
+</div>
+
+<div class="card">
+    <form action="/admin/debug/call" method="post">
+        <div class="form-group mb-4">
+            <label>架電先電話番号</label>
+            <input type="text" name="phone" value="03-6240-9373" required class="form-control"
+                style="font-size: 1.2rem; padding: 10px;">
+            <p class="text-muted small">※ Twilioの認証済み番号またはVerified Caller IDである必要があります。</p>
+        </div>
+
+        <div id="questions-container">
+            <div class="form-group mb-4 question-item">
+                <label>質問1</label>
+                <textarea name="questions" required class="form-control" rows="2">弊社を希望した志望動機を教えてください</textarea>
+            </div>
+            <div class="form-group mb-4 question-item">
+                <label>質問2</label>
+                <textarea name="questions" required class="form-control"
+                    rows="2">Photoshopやillustratorは使用したことがありますか、ある場合はどの程度出来るかを教えてください</textarea>
+            </div>
+            <div class="form-group mb-4 question-item">
+                <label>質問3</label>
+                <textarea name="questions" required class="form-control"
+                    rows="2">AIなどは普段使用していますが、使用している場合はどういったことに使っているかを教えてください</textarea>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuestion()">＋ 質問を追加</button>
+            <button type="button" class="btn btn-warning btn-sm" onclick="removeQuestion()">－ 最後の質問を削除</button>
+        </div>
+
+        <script>
+            function addQuestion() {
+                const container = document.getElementById('questions-container');
+                const count = container.children.length + 1;
+                const div = document.createElement('div');
+                div.className = 'form-group mb-4 question-item';
+                div.innerHTML = `<label>質問${count}</label><textarea name="questions" required class="form-control" rows="2"></textarea>`;
+                container.appendChild(div);
+            }
+            function removeQuestion() {
+                const container = document.getElementById('questions-container');
+                if (container.children.length > 1) {
+                    container.removeChild(container.lastElementChild);
+                }
+            }
+        </script>
+
+        <button type="submit" class="btn btn-danger btn-lg" style="width: 100%;">架電実行</button>
+    </form>
+</div>
+{% endblock %}

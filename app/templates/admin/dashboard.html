@@ -1,0 +1,33 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="header mb-4">
+    <h1>管理ダッシュボード</h1>
+    <p class="text-muted">AI一次面接システムの現在の状況を確認できます。</p>
+</div>
+
+<div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+    <div class="card">
+        <h2>候補者数</h2>
+        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">{{ stats.total_candidates }}</div>
+        <a href="/admin/candidates_ui" class="btn btn-primary btn-sm mt-4">一覧を見る</a>
+    </div>
+    <div class="card">
+        <h2>本日の面接</h2>
+        <div style="font-size: 2.5rem; font-weight: 700;">{{ stats.today_interviews }}</div>
+        <a href="/admin/interviews_ui" class="btn btn-primary btn-sm mt-4">詳細を見る</a>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <h2>クイックアクション (デバッグ)</h2>
+    <p>現在の設定でテスト架電を実行します。</p>
+    <div class="flex gap-2 mt-4">
+        <form action="/admin/debug/create_test_call" method="post"
+            onsubmit="return confirm('03-6240-9373に発信します。よろしいですか？');">
+            <button type="submit" class="btn btn-danger">🛠️ テスト架電を実行 (03-6240-9373)</button>
+        </form>
+        <a href="/admin/debug/call" class="btn btn-secondary">🛠️ デバッグ架電ツールへ (詳細設定)</a>
+    </div>
+</div>
+{% endblock %}
