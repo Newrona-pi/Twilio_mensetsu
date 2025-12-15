@@ -106,6 +106,7 @@ def make_outbound_call(to_phone: str, interview_id: int):
         
         # Webhook URL for the logic
         base_url = BASE_URL.rstrip('/')
+        print(f"[INFO] Using BASE_URL for Twilio: {base_url}")
         url = f"{base_url}/voice/call?interview_id={interview_id}"
         
         call = client.calls.create(
