@@ -25,7 +25,9 @@ def transcribe_audio_url(audio_url: str, max_retries: int = 5, retry_delay: int 
     # Download with retry
     for i in range(max_retries):
         try:
-            response = requests.get(audio_url)
+            # Add Basic Auth for Twilio
+            auth = (os.environ.get("TWILIO_ACCOUNT_SID"), os.environ.get("TWILIO_AUTH_TOKEN"))
+            response = requests.get(audio_url, auth=auth)
             if response.status_code == 200:
                 # Check Content-Type or size if needed, but 200 is usually good enough for MVP
                 with open(file_path, "wb") as f:
