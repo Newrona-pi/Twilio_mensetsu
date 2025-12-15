@@ -29,44 +29,61 @@ async def start_call(
     interview_id: int = Query(...),
     session: Session = Depends(get_session)
 ):
-    interview = session.get(Interview, interview_id)
-    if not interview:
-        return Response(content=str(VoiceResponse().hangup()), media_type="application/xml")
+    try:
+        print(f"[INFO] Incoming call for interview_id={interview_id}")
+        interview = session.get(Interview, interview_id)
+        if not interview:
+            print(f"[ERROR] Interview {interview_id} not found")
+            return Response(content=str(VoiceResponse().hangup()), media_type="application/xml")
+        
+        # Init snapshot logic same as before...
+        if not interview.session_snapshot:
+            print(f"[INFO] Initializing snapshot for interview {interview_id}")
+            candidate = interview.candidate
+            if not candidate:
+                 # Fetch manually if relationship fails?
+                 candidate = session.get(Candidate, interview.candidate_id)
+            
+            q_set_id = candidate.question_set_id
+            if not q_set_id:
+                qs = session.exec(select(QuestionSet)).first()
+                if qs: q_set_id = qs.id
+            questions = []
+            if q_set_id:
+                questions = session.exec(select(Question).where(Question.set_id == q_set_id).order_by(Question.order)).all()
+            
+            print(f"[INFO] Questions found: {len(questions)}")
+            snapshot = [{"id": q.id, "text": q.text, "max_duration": q.max_duration} for q in questions]
+            interview.session_snapshot = snapshot
+            interview.status = "in_progress"
+            interview.current_stage = "greeting"
+            session.add(interview)
+            session.commit()
+            session.refresh(interview)
+        
+        resp = VoiceResponse()
+        
+        # Step 5: Greeting
+        resp.say("お電話ありがとうございます。株式会社パインズのAI面接官です。", language="ja-JP", voice="alice")
+        resp.pause(length=1)
+        
+        # Step 6: Time Check
+        gather = Gather(input="speech dtmf", action=f"/voice/time_check?interview_id={interview.id}", timeout=5, language="ja-JP")
+        gather.say("只今、面接のお時間はよろしいでしょうか？10分から15分程度となります。はい、か、いいえ、でお答えください。", language="ja-JP", voice="alice")
+        resp.append(gather)
+        
+        # Fallback if no input
+        resp.say("聞き取れませんでした。もう一度お願いします。", language="ja-JP", voice="alice")
+        resp.redirect(f"/voice/call?interview_id={interview.id}")
+        
+        print(f"[INFO] Returning TwiML for interview {interview_id}")
+        return Response(content=str(resp), media_type="application/xml")
     
-    # Init snapshot logic same as before...
-    if not interview.session_snapshot:
-        candidate = interview.candidate
-        q_set_id = candidate.question_set_id
-        if not q_set_id:
-            qs = session.exec(select(QuestionSet)).first()
-            if qs: q_set_id = qs.id
-        questions = []
-        if q_set_id:
-            questions = session.exec(select(Question).where(Question.set_id == q_set_id).order_by(Question.order)).all()
-        snapshot = [{"id": q.id, "text": q.text, "max_duration": q.max_duration} for q in questions]
-        interview.session_snapshot = snapshot
-        interview.status = "in_progress"
-        interview.current_stage = "greeting"
-        session.add(interview)
-        session.commit()
-        session.refresh(interview)
-    
-    resp = VoiceResponse()
-    
-    # Step 5: Greeting
-    resp.say("お電話ありがとうございます。株式会社パインズのAI面接官です。", language="ja-JP", voice="alice")
-    resp.pause(length=1)
-    
-    # Step 6: Time Check
-    gather = Gather(input="speech dtmf", action=f"/voice/time_check?interview_id={interview.id}", timeout=5, language="ja-JP")
-    gather.say("只今、面接のお時間はよろしいでしょうか？10分から15分程度となります。はい、か、いいえ、でお答えください。", language="ja-JP", voice="alice")
-    resp.append(gather)
-    
-    # Fallback if no input
-    resp.say("聞き取れませんでした。もう一度お願いします。", language="ja-JP", voice="alice")
-    resp.redirect(f"/voice/call?interview_id={interview.id}")
-    
-    return Response(content=str(resp), media_type="application/xml")
+    except Exception as e:
+        print(f"[CRITICAL] Detailed Error in start_call: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response(content=str(VoiceResponse().say("システムエラーが発生しました。")), media_type="application/xml")
 
 @router.post("/time_check")
 async def time_check(
