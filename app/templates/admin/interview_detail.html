@@ -34,7 +34,7 @@
     <div class="mb-4">
         <p class="text-muted" style="font-size: 0.9rem;">回答音声:</p>
         {% if review.recording_url %}
-        <audio controls src="{{ review.recording_url }}" style="width: 100%; margin-top: 0.5rem;"></audio>
+        <audio controls src="/admin/recordings/{{ review.recording_url.split('/')[-1] }}" style="width: 100%; margin-top: 0.5rem;"></audio>
         {% else %}
         <span class="text-muted">（録音データなし）</span>
         {% endif %}

@@ -68,8 +68,8 @@ async def start_call(
         resp.pause(length=1)
         
         # Step 6: Time Check
-        gather = Gather(input="speech dtmf", action=f"/voice/time_check?interview_id={interview.id}", timeout=5, language="ja-JP")
-        gather.say("只今、面接のお時間はよろしいでしょうか？10分から15分程度となります。はい、か、いいえ、でお答えください。", language="ja-JP", voice="alice")
+        resp.say("只今、面接のお時間はよろしいでしょうか？10分から15分程度となります。はい、か、いいえ、でお答えください。", language="ja-JP", voice="alice")
+        gather = Gather(input="speech dtmf", action=f"/voice/time_check?interview_id={interview.id}", timeout=5, language="ja-JP", bargeIn=False)
         resp.append(gather)
         
         # Fallback if no input

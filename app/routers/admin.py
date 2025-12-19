@@ -7,6 +7,9 @@ import secrets
 import csv
 import codecs
 import uuid
+import os
+import requests
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 security = HTTPBasic()
@@ -116,3 +119,22 @@ def list_candidates(session: Session = Depends(get_session), username: str = Dep
 @router.get("/interviews")
 def list_interviews(session: Session = Depends(get_session), username: str = Depends(get_current_username)):
     return session.exec(select(Interview)).all()
+
+@router.get("/recordings/{recording_sid}")
+async def proxy_recording(recording_sid: str, username: str = Depends(get_current_username)):
+    """
+    Proxy playback of Twilio recordings.
+    """
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    
+    # Twilio recording URL (mp3)
+    recording_url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Recordings/{recording_sid}.mp3"
+    
+    def iter_file():
+        with requests.get(recording_url, auth=(account_sid, auth_token), stream=True) as r:
+            r.raise_for_status()
+            for chunk in r.iter_content(chunk_size=8192):
+                yield chunk
+
+    return StreamingResponse(iter_file(), media_type="audio/mpeg")
